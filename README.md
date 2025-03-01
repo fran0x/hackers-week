@@ -1,6 +1,6 @@
-# Binance BTC/USDT Simple Ladder
+# BTC/USDT Order Book Visualizer
 
-A minimalist real-time BTC/USDT order book from Binance data.
+A minimalist real-time BTC/USDT order book from Binance data. Displays buy/sell orders, current price, and recent trades in a terminal-like interface.
 
 ## Setup
 
