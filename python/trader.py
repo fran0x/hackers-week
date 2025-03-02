@@ -248,6 +248,161 @@ class Trader:
             return executed_trades
         
         return None
+        
+    def place_limit_buy_order(self, order_book: SimpleOrderBook, amount: float, price: float) -> Optional[List[Trade]]:
+        """Place a limit buy order that may execute immediately if price crosses the spread."""
+        # Check if we have enough USDT
+        required_usdt = amount * price
+        if self.balances["USDT"] < required_usdt:
+            print(f"Insufficient USDT balance. Required: {required_usdt}, Available: {self.balances['USDT']}")
+            return None
+        
+        # Create a limit buy order
+        limit_order = Order(
+            id=str(uuid.uuid4()),
+            trader_id=self.id,
+            type=OrderType.BUY,
+            symbol=order_book.symbol,
+            amount=amount,
+            price=price,
+            timestamp=time.time(),
+            status=OrderStatus.PENDING
+        )
+        
+        # Add the order to our records
+        self.orders.append(limit_order)
+        
+        # Check if there are any sell orders with price <= our limit price
+        executed_trades = None
+        remaining_amount = amount
+        
+        # Try to match with existing sell orders first
+        if order_book.sell_orders:
+            matching_sell_orders = [o for o in order_book.sell_orders if o.price <= price]
+            if matching_sell_orders:
+                # Temporarily reserve the funds
+                self.balances["USDT"] -= required_usdt
+                
+                # Add our order to the book - it will be matched immediately
+                executed_trades = order_book.add_order(limit_order)
+                
+                if executed_trades:
+                    # Order executed (fully or partially)
+                    total_executed = sum(trade.amount for trade in executed_trades)
+                    remaining_amount = amount - total_executed
+                    
+                    # Update our records
+                    for trade in executed_trades:
+                        self.trades.append(trade)
+                    
+                    # Update the order status in our records
+                    if remaining_amount <= 0:
+                        limit_order.status = OrderStatus.FILLED
+                    else:
+                        # If partially filled, adjust the order in our records
+                        limit_order.status = OrderStatus.PARTIALLY_FILLED
+                        limit_order.filled_amount = total_executed
+                        limit_order.remaining_amount = remaining_amount
+                        
+                    # Return unused funds if partial fill
+                    if remaining_amount > 0:
+                        # We need to add the order to the book and keep the rest of the funds reserved
+                        pass  # The order is already in the book from the matching
+                    else:
+                        # We've used all the reserved funds
+                        pass
+                else:
+                    # No trades executed, return the funds
+                    self.balances["USDT"] += required_usdt
+            else:
+                # No matching sell orders, just add to the book
+                self.balances["USDT"] -= required_usdt  # Reserve funds
+                order_book.buy_orders.append(limit_order)
+                order_book.buy_orders.sort(key=lambda x: x.price, reverse=True)  # Sort by highest price first
+        else:
+            # No sell orders at all, just add to the book
+            self.balances["USDT"] -= required_usdt  # Reserve funds
+            order_book.buy_orders.append(limit_order)
+            order_book.buy_orders.sort(key=lambda x: x.price, reverse=True)  # Sort by highest price first
+        
+        return executed_trades
+    
+    def place_limit_sell_order(self, order_book: SimpleOrderBook, amount: float, price: float) -> Optional[List[Trade]]:
+        """Place a limit sell order that may execute immediately if price crosses the spread."""
+        # Check if we have enough BTC
+        if self.balances["BTC"] < amount:
+            print(f"Insufficient BTC balance. Required: {amount}, Available: {self.balances['BTC']}")
+            return None
+        
+        # Create a limit sell order
+        limit_order = Order(
+            id=str(uuid.uuid4()),
+            trader_id=self.id,
+            type=OrderType.SELL,
+            symbol=order_book.symbol,
+            amount=amount,
+            price=price,
+            timestamp=time.time(),
+            status=OrderStatus.PENDING
+        )
+        
+        # Add the order to our records
+        self.orders.append(limit_order)
+        
+        # Check if there are any buy orders with price >= our limit price
+        executed_trades = None
+        remaining_amount = amount
+        
+        # Try to match with existing buy orders first
+        if order_book.buy_orders:
+            matching_buy_orders = [o for o in order_book.buy_orders if o.price >= price]
+            if matching_buy_orders:
+                # Temporarily reserve the BTC
+                self.balances["BTC"] -= amount
+                
+                # Add our order to the book - it will be matched immediately
+                executed_trades = order_book.add_order(limit_order)
+                
+                if executed_trades:
+                    # Order executed (fully or partially)
+                    total_executed = sum(trade.amount for trade in executed_trades)
+                    remaining_amount = amount - total_executed
+                    
+                    # Update our records
+                    for trade in executed_trades:
+                        self.trades.append(trade)
+                    
+                    # Update the order status in our records
+                    if remaining_amount <= 0:
+                        limit_order.status = OrderStatus.FILLED
+                    else:
+                        # If partially filled, adjust the order in our records
+                        limit_order.status = OrderStatus.PARTIALLY_FILLED
+                        limit_order.filled_amount = total_executed
+                        limit_order.remaining_amount = remaining_amount
+                        
+                    # Return unused BTC if partial fill
+                    if remaining_amount > 0:
+                        # We need to add the order to the book and keep the rest of the BTC reserved
+                        pass  # The order is already in the book from the matching
+                    else:
+                        # We've used all the reserved BTC
+                        pass
+                else:
+                    # No trades executed, return the BTC
+                    self.balances["BTC"] += amount
+            else:
+                # No matching buy orders, just add to the book
+                self.balances["BTC"] -= amount  # Reserve BTC
+                order_book.sell_orders.append(limit_order)
+                order_book.sell_orders.sort(key=lambda x: x.price)  # Sort by lowest price first
+        else:
+            # No buy orders at all, just add to the book
+            self.balances["BTC"] -= amount  # Reserve BTC
+            order_book.sell_orders.append(limit_order)
+            order_book.sell_orders.sort(key=lambda x: x.price)  # Sort by lowest price first
+        
+        return executed_trades
 
 # Example usage:
 if __name__ == "__main__":

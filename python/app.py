@@ -83,23 +83,66 @@ app.layout = html.Div(style={'backgroundColor': 'black'}, children=[
                         # Trader Balance - Moved inside the card
                         html.Div(id='trader-balance', className="text-center mb-3"),
                         
-                        # Simplified order form with separate buy/sell buttons
-                        dbc.Row([
-                            dbc.Col([
-                                dbc.Input(id='order-amount', type='number', placeholder='Enter BTC amount', 
-                                         min=0.001, step=0.001, value=0.01),
-                            ], width=6),
+                        # Order tabs for Market and Limit orders
+                        dbc.Tabs([
+                            dbc.Tab(label="MARKET", tab_id="market-tab", 
+                                   label_style={'fontWeight': 'bold', 'color': 'white'},
+                                   active_label_style={'color': 'white'},
+                                   children=[
+                                # Market order form with buy/sell buttons
+                                dbc.Row([
+                                    dbc.Col([
+                                        dbc.Label("Amount (BTC)", style={'fontFamily': 'courier, monospace', 'marginTop': '10px', 'fontSize': 12}),
+                                        dbc.Input(id='market-amount', type='number', placeholder='Enter BTC amount', 
+                                                 min=0.001, step=0.001, value=0.01),
+                                    ], width=6),
+                                    
+                                    dbc.Col([
+                                        dbc.Button("BUY", id='market-buy-btn', color="success", className="w-100",
+                                                  style={'fontWeight': 'bold', 'marginTop': '35px'}),
+                                    ], width=3),
+                                    
+                                    dbc.Col([
+                                        dbc.Button("SELL", id='market-sell-btn', color="danger", className="w-100",
+                                                  style={'fontWeight': 'bold', 'marginTop': '35px'}),
+                                    ], width=3),
+                                ], className="mb-2 align-items-center")
+                            ]),
                             
-                            dbc.Col([
-                                dbc.Button("BUY", id='buy-btn', color="success", className="w-100",
-                                          style={'fontWeight': 'bold'}),
-                            ], width=3),
-                            
-                            dbc.Col([
-                                dbc.Button("SELL", id='sell-btn', color="danger", className="w-100",
-                                          style={'fontWeight': 'bold'}),
-                            ], width=3),
-                        ], className="mb-2 align-items-center"),
+                            dbc.Tab(label="LIMIT", tab_id="limit-tab", 
+                                   label_style={'fontWeight': 'bold', 'color': 'white'},
+                                   active_label_style={'color': 'white'},
+                                   children=[
+                                # Limit order form with price field and buy/sell buttons
+                                dbc.Row([
+                                    dbc.Col([
+                                        dbc.Label("Amount (BTC)", style={'fontFamily': 'courier, monospace', 'marginTop': '10px', 'fontSize': 12}),
+                                        dbc.Input(id='limit-amount', type='number', placeholder='BTC amount', 
+                                                 min=0.001, step=0.001, value=0.01),
+                                    ], width=4),
+                                    
+                                    dbc.Col([
+                                        dbc.Label("Price (USDT)", style={'fontFamily': 'courier, monospace', 'marginTop': '10px', 'fontSize': 12}),
+                                        dbc.Input(id='limit-price', type='number', placeholder='Limit price', 
+                                                 min=0.01, step=0.01),
+                                    ], width=4),
+                                    
+                                    dbc.Col([
+                                        dbc.Row([
+                                            dbc.Col([
+                                                dbc.Button("LIMIT BUY", id='limit-buy-btn', color="success", className="w-100",
+                                                          style={'fontWeight': 'bold', 'marginTop': '35px', 'fontSize': 12}),
+                                            ], width=6),
+                                            
+                                            dbc.Col([
+                                                dbc.Button("LIMIT SELL", id='limit-sell-btn', color="danger", className="w-100",
+                                                          style={'fontWeight': 'bold', 'marginTop': '35px', 'fontSize': 12}),
+                                            ], width=6),
+                                        ]),
+                                    ], width=4),
+                                ], className="mb-2 align-items-center")
+                            ]),
+                        ], id="order-tabs", active_tab="market-tab", className="mb-3"),
                         
                         # Hidden input to store order type (will be set by the buttons)
                         dcc.Store(id='order-type', data='buy')
@@ -176,6 +219,27 @@ app.layout = html.Div(style={'backgroundColor': 'black'}, children=[
                         {
                             'if': {'filter_query': '{type} = "user_bid"', 'column_id': 'price'},
                             'color': '#66ff66',
+                            'fontWeight': 'bold'
+                        },
+                        # Limit orders - with yellow highlighting
+                        {
+                            'if': {'filter_query': '{type} = "limit_ask"'},
+                            'backgroundColor': '#3a1010',
+                            'border': '1px solid yellow'
+                        },
+                        {
+                            'if': {'filter_query': '{type} = "limit_ask"', 'column_id': 'price'},
+                            'color': 'yellow',
+                            'fontWeight': 'bold'
+                        },
+                        {
+                            'if': {'filter_query': '{type} = "limit_bid"'},
+                            'backgroundColor': '#103a10', 
+                            'border': '1px solid yellow'
+                        },
+                        {
+                            'if': {'filter_query': '{type} = "limit_bid"', 'column_id': 'price'},
+                            'color': 'yellow',
                             'fontWeight': 'bold'
                         },
                         # Last price row - highlight
@@ -256,8 +320,8 @@ app.layout = html.Div(style={'backgroundColor': 'black'}, children=[
 )
 def update_data(n):
     try:
-        # Fetch the order book data from Binance
-        order_book = exchange.fetch_order_book('BTC/USDT', limit=10)
+        # Fetch the order book data from Binance - 20 levels each side
+        order_book = exchange.fetch_order_book('BTC/USDT', limit=20)
         
         # Fetch ticker for additional market info
         ticker = exchange.fetch_ticker('BTC/USDT')
@@ -284,8 +348,14 @@ def update_data(n):
         user_orders = []
         for order in simple_order_book.buy_orders + simple_order_book.sell_orders:
             if order.trader_id == trader.id and order.remaining_amount > 0:
-                # Mark as user's order
-                user_type = 'user_bid' if order.type == OrderType.BUY else 'user_ask'
+                # Any trader orders in the book are limit orders
+                if order.status == OrderStatus.PARTIALLY_FILLED:
+                    # This is a partially filled limit order
+                    user_type = 'limit_bid' if order.type == OrderType.BUY else 'limit_ask'
+                else:
+                    # This is a regular limit order
+                    user_type = 'limit_bid' if order.type == OrderType.BUY else 'limit_ask'
+                
                 user_orders.append({
                     'price': order.price,
                     'amount': order.remaining_amount,
@@ -488,14 +558,14 @@ def update_data(n):
         empty_trader_balance = html.Div("Error loading trader balances", style={'color': 'red'})
         return error_data, order_book_columns, trades_error_data, trades_columns, error_info, empty_trader_balance
 
-# Set order type and handle order placement based on which button is clicked
+# Handle market order placement based on which button is clicked
 @app.callback(
     [Output('notification-container', 'children'),
      Output('order-type', 'data')],
-    [Input('buy-btn', 'n_clicks'),
-     Input('sell-btn', 'n_clicks')],
+    [Input('market-buy-btn', 'n_clicks'),
+     Input('market-sell-btn', 'n_clicks')],
     [State('order-type', 'data'),
-     State('order-amount', 'value')],
+     State('market-amount', 'value')],
     prevent_initial_call=True
 )
 def place_market_order(buy_clicks, sell_clicks, current_order_type, amount):
@@ -506,9 +576,9 @@ def place_market_order(buy_clicks, sell_clicks, current_order_type, amount):
     
     button_id = ctx.triggered[0]['prop_id'].split('.')[0]
     
-    if button_id == 'buy-btn':
+    if button_id == 'market-buy-btn':
         order_type = 'buy'
-    elif button_id == 'sell-btn':
+    elif button_id == 'market-sell-btn':
         order_type = 'sell'
     else:
         return [dash.no_update, current_order_type]
@@ -671,6 +741,214 @@ def place_market_order(buy_clicks, sell_clicks, current_order_type, amount):
                    "backgroundColor": "#d9534f", "color": "white", "zIndex": 1000}
         )
         return [notification, order_type]
+
+# Handle limit order placement
+@app.callback(
+    [Output('notification-container', 'children', allow_duplicate=True),
+     Output('order-type', 'data', allow_duplicate=True)],
+    [Input('limit-buy-btn', 'n_clicks'),
+     Input('limit-sell-btn', 'n_clicks')],
+    [State('order-type', 'data'),
+     State('limit-amount', 'value'),
+     State('limit-price', 'value')],
+    prevent_initial_call=True
+)
+def place_limit_order(buy_clicks, sell_clicks, current_order_type, amount, price):
+    # Determine which button was clicked
+    ctx = callback_context
+    if not ctx.triggered:
+        return [dash.no_update, current_order_type]
+    
+    button_id = ctx.triggered[0]['prop_id'].split('.')[0]
+    
+    if button_id == 'limit-buy-btn':
+        order_type = 'buy'
+    elif button_id == 'limit-sell-btn':
+        order_type = 'sell'
+    else:
+        return [dash.no_update, current_order_type]
+    
+    if amount is None or price is None:
+        notification = dbc.Toast(
+            "Please specify both amount and price for limit orders.",
+            id="order-notification",
+            header="Limit Order Error",
+            icon="danger",
+            dismissable=True,
+            is_open=True,
+            duration=4000,
+            style={"position": "fixed", "top": 10, "right": 10, "width": 350, 
+                   "backgroundColor": "#d9534f", "color": "white", "zIndex": 1000}
+        )
+        return [notification, order_type]
+    
+    try:
+        # Get the current market order book for reference
+        binance_order_book = exchange.fetch_order_book('BTC/USDT', limit=1)
+        
+        # Place the limit order using the proper trader method
+        if order_type == 'buy':
+            executed_trades = trader.place_limit_buy_order(simple_order_book, amount, price)
+            
+            # Check result and show appropriate notification
+            if executed_trades and len(executed_trades) > 0:
+                # Order executed (fully or partially)
+                total_amount = sum(trade.amount for trade in executed_trades)
+                
+                # Calculate average execution price
+                if total_amount > 0:
+                    avg_price = sum(trade.price * trade.amount for trade in executed_trades) / total_amount
+                else:
+                    # This shouldn't happen if we have trades, but just in case
+                    avg_price = price
+                
+                # Check if fully executed by comparing with original amount
+                if total_amount < amount:
+                    # Partially executed
+                    remaining_amount = amount - total_amount
+                    
+                    notification = dbc.Toast(
+                        [
+                            html.P(f"Limit Buy Order partially executed immediately:"),
+                            html.P(f"Executed: {total_amount:.6f} BTC at {avg_price:.2f} USDT"),
+                            html.P(f"Remaining: {remaining_amount:.6f} BTC at {price:.2f} USDT placed in order book")
+                        ],
+                        id="order-notification",
+                        header="Limit Buy Partially Executed",
+                        icon="success",
+                        dismissable=True,
+                        is_open=True,
+                        duration=5000,
+                        style={"position": "fixed", "top": 10, "right": 10, "width": 350, 
+                              "backgroundColor": "#3a4d56", "color": "white", "zIndex": 1000}
+                    )
+                else:
+                    # Fully executed immediately
+                    notification = dbc.Toast(
+                        [
+                            html.P(f"Limit Buy Order executed immediately:"),
+                            html.P(f"Executed: {total_amount:.6f} BTC at {avg_price:.2f} USDT")
+                        ],
+                        id="order-notification",
+                        header="Limit Buy Executed",
+                        icon="success",
+                        dismissable=True,
+                        is_open=True,
+                        duration=4000,
+                        style={"position": "fixed", "top": 10, "right": 10, "width": 350, 
+                              "backgroundColor": "#3a4d56", "color": "white", "zIndex": 1000}
+                    )
+            else:
+                # Not executed - just placed in the order book
+                notification = dbc.Toast(
+                    f"Limit Buy Order placed for {amount:.6f} BTC at {price:.2f} USDT",
+                    id="order-notification",
+                    header="Limit Buy Order Placed",
+                    icon="success",
+                    dismissable=True,
+                    is_open=True,
+                    duration=4000,
+                    style={"position": "fixed", "top": 10, "right": 10, "width": 350, 
+                          "backgroundColor": "#3a4d56", "color": "white", "zIndex": 1000}
+                )
+                
+        else:  # Sell order
+            executed_trades = trader.place_limit_sell_order(simple_order_book, amount, price)
+            
+            # Check result and show appropriate notification
+            if executed_trades and len(executed_trades) > 0:
+                # Order executed (fully or partially)
+                total_amount = sum(trade.amount for trade in executed_trades)
+                
+                # Calculate average execution price
+                if total_amount > 0:
+                    avg_price = sum(trade.price * trade.amount for trade in executed_trades) / total_amount
+                else:
+                    # Fallback (shouldn't happen)
+                    avg_price = price
+                
+                # Check if fully executed by comparing with original amount
+                if total_amount < amount:
+                    # Partially executed
+                    remaining_amount = amount - total_amount
+                    
+                    notification = dbc.Toast(
+                        [
+                            html.P(f"Limit Sell Order partially executed immediately:"),
+                            html.P(f"Executed: {total_amount:.6f} BTC at {avg_price:.2f} USDT"),
+                            html.P(f"Remaining: {remaining_amount:.6f} BTC at {price:.2f} USDT placed in order book")
+                        ],
+                        id="order-notification",
+                        header="Limit Sell Partially Executed",
+                        icon="success",
+                        dismissable=True,
+                        is_open=True,
+                        duration=5000,
+                        style={"position": "fixed", "top": 10, "right": 10, "width": 350, 
+                              "backgroundColor": "#3a4d56", "color": "white", "zIndex": 1000}
+                    )
+                else:
+                    # Fully executed immediately
+                    notification = dbc.Toast(
+                        [
+                            html.P(f"Limit Sell Order executed immediately:"),
+                            html.P(f"Executed: {total_amount:.6f} BTC at {avg_price:.2f} USDT")
+                        ],
+                        id="order-notification",
+                        header="Limit Sell Executed",
+                        icon="success",
+                        dismissable=True,
+                        is_open=True,
+                        duration=4000,
+                        style={"position": "fixed", "top": 10, "right": 10, "width": 350, 
+                              "backgroundColor": "#3a4d56", "color": "white", "zIndex": 1000}
+                    )
+            else:
+                # Not executed - just placed in the order book
+                notification = dbc.Toast(
+                    f"Limit Sell Order placed for {amount:.6f} BTC at {price:.2f} USDT",
+                    id="order-notification",
+                    header="Limit Sell Order Placed",
+                    icon="success",
+                    dismissable=True,
+                    is_open=True,
+                    duration=4000,
+                    style={"position": "fixed", "top": 10, "right": 10, "width": 350, 
+                          "backgroundColor": "#3a4d56", "color": "white", "zIndex": 1000}
+                )
+        
+        return [notification, order_type]
+    
+    except Exception as e:
+        # Handle errors
+        notification = dbc.Toast(
+            str(e),
+            id="order-notification",
+            header="Limit Order Error",
+            icon="danger",
+            dismissable=True,
+            is_open=True,
+            duration=4000,
+            style={"position": "fixed", "top": 10, "right": 10, "width": 350, 
+                  "backgroundColor": "#d9534f", "color": "white", "zIndex": 1000}
+        )
+        return [notification, order_type]
+
+# Add callback to autofill limit price with current market price
+@app.callback(
+    Output('limit-price', 'value'),
+    [Input('order-tabs', 'active_tab')],
+    prevent_initial_call=True
+)
+def update_limit_price(active_tab):
+    if active_tab == "limit-tab":
+        try:
+            # Get current market price
+            ticker = exchange.fetch_ticker('BTC/USDT')
+            return ticker['last']
+        except Exception:
+            return None
+    return dash.no_update
 
 if __name__ == '__main__':
     app.run_server(debug=True, host='0.0.0.0', port=8050)
