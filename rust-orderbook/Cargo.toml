@@ -1,0 +1,18 @@
+[package]
+name = "btc-orderbook"
+version = "0.1.0"
+edition = "2021"
+description = "A terminal-based BTC/USDT order book visualizer for Binance"
+authors = ["Your Name <your.email@example.com>"]
+
+[dependencies]
+ratatui = "0.24.0"
+crossterm = "0.27.0"
+tokio = { version = "1.32.0", features = ["full"] }
+reqwest = { version = "0.11.20", features = ["json"] }
+serde = { version = "1.0.188", features = ["derive"] }
+serde_json = "1.0.107"
+anyhow = "1.0.75"
+chrono = "0.4.31"
+rust_decimal = "1.31.0"
+rust_decimal_macros = "1.31.0"

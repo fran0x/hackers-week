@@ -1,6 +1,12 @@
 # BTC/USDT Order Book Visualizer
 
-A minimalist real-time BTC/USDT order book from Binance data. Displays buy/sell orders, current price, and recent trades in a terminal-like interface.
+A minimalist real-time BTC/USDT order book from Binance data.
+
+## Implementations
+
+This project provides two implementations:
+- **Python (Web)**: Main implementation using Dash and Plotly (this directory)
+- **Rust (Terminal)**: Alternative TUI version in the `rust-orderbook/` directory
 
 ## Setup
 
