@@ -16,17 +16,15 @@ This repository contains two implementations of a real-time order book:
 ## 📌 Features  
 
 Both implementations display:  
-✅ OHLC market data & spread  
-✅ Order book with **bids (green)** and **asks (red)**  
-✅ Recent trades with timestamps  
-
----
+- OHLC market data & spread  
+- Order book with **bids (green)** and **asks (red)**  
+- Recent trades with timestamps  
 
 ## 🛠️ Getting Started  
 
 To explore the project, follow this sequence:
 
-### 1️⃣ **Try the Command Line API Access**  
+### 1️⃣ Try the Command Line API Access
 
 Before using the applications, you can fetch Binance data manually:
 
@@ -39,9 +37,7 @@ cargo install websocat
 websocat "wss://stream.binance.com:9443/ws/btcusdt@trade"
 ```
 
----
-
-### 2️⃣ **Try the Python Implementation**  
+### 2️⃣ Try the Python Implementation 
 
 The Python project has multiple branches with increasing functionality:
 
@@ -51,8 +47,6 @@ The Python project has multiple branches with increasing functionality:
 
 Start by checking out the **main** branch and progress through the others.
 
----
-
-### 3️⃣ **Try the Rust Implementation**  
+### 3️⃣ Try the Rust Implementation
 
 For a **terminal-based** experience, explore the Rust project, which provides real-time order book visualization in a CLI environment.
