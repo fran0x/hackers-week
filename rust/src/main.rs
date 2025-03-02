@@ -24,7 +24,7 @@ async fn main() -> Result<()> {
 
     // Create app state
     let app = App::new();
-    
+
     // Run the app
     let res = run_app(&mut terminal, app).await;
 
@@ -48,16 +48,16 @@ async fn run_app<B: ratatui::backend::Backend>(
     terminal: &mut Terminal<B>,
     mut app: App,
 ) -> Result<()> {
-    let mut interval = time::interval(Duration::from_millis(2000));
-    
+    let mut interval = time::interval(Duration::from_millis(1000));
+
     loop {
-        // Update data
+        // Update market data
         app.update().await?;
-        
-        // Draw UI
+
+        // Draw (T)UI
         terminal.draw(|f| ui::render(f, &app))?;
 
-        // Handle input
+        // Handle user input
         if event::poll(Duration::from_millis(100))? {
             if let Event::Key(key) = event::read()? {
                 if key.kind == KeyEventKind::Press {
@@ -69,11 +69,8 @@ async fn run_app<B: ratatui::backend::Backend>(
                 }
             }
         }
-        
-        tokio::select! {
-            _ = interval.tick() => {
-                // This is handled by updating the app at the start of the loop
-            }
-        }
+
+        // Wait for a moment
+        interval.tick().await;
     }
 }

@@ -1,7 +1,7 @@
 use anyhow::Result;
 use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use std::cmp::Ordering;
 
 pub const SYMBOL: &str = "BTCUSDT";
@@ -22,10 +22,18 @@ impl BinanceClient {
         let url = format!("{}/depth?symbol={}&limit={}", BASE_URL, SYMBOL, limit);
         let response = self.client.get(&url).send().await?;
         let order_book = response.json::<OrderBookResponse>().await?;
-        
+
         Ok(OrderBook {
-            bids: order_book.bids.into_iter().map(|b| Order::new(b[0], b[1], Side::Buy)).collect(),
-            asks: order_book.asks.into_iter().map(|a| Order::new(a[0], a[1], Side::Sell)).collect(),
+            bids: order_book
+                .bids
+                .into_iter()
+                .map(|b| Order::new(b[0].clone(), b[1].clone(), Side::Buy))
+                .collect(),
+            asks: order_book
+                .asks
+                .into_iter()
+                .map(|a| Order::new(a[0].clone(), a[1].clone(), Side::Sell))
+                .collect(),
         })
     }
 
@@ -33,7 +41,7 @@ impl BinanceClient {
         let url = format!("{}/ticker/24hr?symbol={}", BASE_URL, SYMBOL);
         let response = self.client.get(&url).send().await?;
         let ticker = response.json::<TickerResponse>().await?;
-        
+
         Ok(Ticker {
             last_price: ticker.last_price,
             open_price: ticker.open_price,
@@ -48,7 +56,7 @@ impl BinanceClient {
         let url = format!("{}/trades?symbol={}&limit={}", BASE_URL, SYMBOL, limit);
         let response = self.client.get(&url).send().await?;
         let trades = response.json::<Vec<TradeResponse>>().await?;
-        
+
         Ok(trades
             .into_iter()
             .map(|t| Trade {
@@ -57,7 +65,11 @@ impl BinanceClient {
                 qty: t.qty,
                 time: chrono::DateTime::from_timestamp_millis(t.time).unwrap_or_default(),
                 is_buyer_maker: t.is_buyer_maker,
-                side: if t.is_buyer_maker { Side::Sell } else { Side::Buy },
+                side: if t.is_buyer_maker {
+                    Side::Sell
+                } else {
+                    Side::Buy
+                },
             })
             .collect())
     }
@@ -81,7 +93,7 @@ impl Order {
     pub fn new(price_str: String, amount_str: String, side: Side) -> Self {
         let price = price_str.parse::<Decimal>().unwrap_or_default();
         let amount = amount_str.parse::<Decimal>().unwrap_or_default();
-        
+
         Self {
             price,
             amount,
@@ -94,7 +106,7 @@ impl Order {
 impl Ord for Order {
     fn cmp(&self, other: &Self) -> Ordering {
         match self.side {
-            Side::Buy => other.price.cmp(&self.price),  // Sort bids in descending order
+            Side::Buy => other.price.cmp(&self.price), // Sort bids in descending order
             Side::Sell => self.price.cmp(&other.price), // Sort asks in ascending order
         }
     }
@@ -132,10 +144,12 @@ pub struct Ticker {
 
 #[derive(Debug, Clone)]
 pub struct Trade {
+    #[allow(dead_code)]
     pub id: u64,
     pub price: Decimal,
     pub qty: Decimal,
     pub time: DateTime<Utc>,
+    #[allow(dead_code)]
     pub is_buyer_maker: bool,
     pub side: Side,
 }

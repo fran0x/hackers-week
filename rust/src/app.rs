@@ -1,8 +1,7 @@
-use crate::binance::{BinanceClient, OrderBook, Side, Ticker, Trade};
+use crate::binance::{BinanceClient, OrderBook, Ticker, Trade};
 use anyhow::Result;
-use chrono::{DateTime, Local, Utc};
+use chrono::{DateTime, Local};
 use rust_decimal::Decimal;
-use std::cmp::{max, min};
 
 pub struct App {
     client: BinanceClient,
@@ -31,7 +30,8 @@ impl App {
         match self.fetch_data().await {
             Ok(_) => {
                 self.last_update = Local::now();
-                self.status_message = format!("Last updated: {}", self.last_update.format("%H:%M:%S"));
+                self.status_message =
+                    format!("Last updated: {}", self.last_update.format("%H:%M:%S"));
                 self.error = None;
             }
             Err(e) => {

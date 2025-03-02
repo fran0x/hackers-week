@@ -1,9 +1,7 @@
 ccxt>=3.0.0
 pandas>=2.0.0
 numpy>=1.25.0
-matplotlib>=3.7.0
-plotly>=5.15.0
 dash>=2.11.0
 dash-bootstrap-components>=1.4.0
-notebook>=7.0.0
+plotly>=5.15.0
 

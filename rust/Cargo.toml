@@ -1,12 +1,11 @@
 [package]
-name = "btc-orderbook"
+name = "orderbook"
 version = "0.1.0"
 edition = "2021"
 description = "A terminal-based BTC/USDT order book visualizer for Binance"
-authors = ["Your Name <your.email@example.com>"]
 
 [dependencies]
-ratatui = "0.24.0"
+ratatui = "0.29.0"
 crossterm = "0.27.0"
 tokio = { version = "1.32.0", features = ["full"] }
 reqwest = { version = "0.11.20", features = ["json"] }
