@@ -1,8 +1,10 @@
 # Trading Ladders  
 
-Minimalist real-time **BTC/USDT** order books using **Binance** market data.  
+Minimalist real-time **BTC/USDT** order books using [Binance](https://www.binance.com) market data.  
 
 ## 📋 Prerequisites
+
+- **Platforms**: Linux or MacOS
 - **Python**: 3.11+
 - **Rust**: 1.81+
 
@@ -13,11 +15,9 @@ This repository contains two implementations of a real-time order book:
 - **[Python](/python)** → Web-based version ([Python README](/python/README.md))  
 - **[Rust](/rust)** → Terminal-based version ([Rust README](/rust/README.md))  
 
-## 📌 Features  
-
 Both implementations display:  
-- OHLC market data & spread  
-- Order book with **bids (green)** and **asks (red)**  
+- OHLC market data, 24h volumes and spread  
+- Order book with **bids** (green) and **asks** (red)
 - Recent trades with timestamps  
 
 ## 🛠️ Getting Started  
