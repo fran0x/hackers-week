@@ -30,3 +30,13 @@ curl -s "https://api.binance.com/api/v3/depth?symbol=BTCUSDT&limit=10" | jq
 cargo install websocat
 websocat "wss://stream.binance.com:9443/ws/btcusdt@trade"
 ```
+
+## ⚡ Market Order Execution
+
+The trading ladder supports **placing market orders**. The execution follows these rules:
+
+- A **market buy order** will match against the **lowest available sell price** (best ask).
+- A **market sell order** will match against the **highest available buy price** (best bid).
+
+Market orders execute immediately at the best available price, ensuring fast order fulfillment.
+
