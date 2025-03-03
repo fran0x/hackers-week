@@ -8,6 +8,11 @@ Minimalist real-time **BTC/USDT** order books using [Binance](https://www.binanc
 - **Python**: 3.11+
 - **Rust**: 1.81+
 
+```bash
+# Rust development
+cargo install just
+```
+
 ## 📂 Project Structure  
 
 This repository contains two implementations of a real-time order book:
