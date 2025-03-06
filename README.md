@@ -17,9 +17,9 @@ cargo install just
 
 This repository contains multiple implementations of a real-time order book interactions:
 
-- **[Binance with Python](/python)** → Web-based version ([Python README](/python/README.md))  
-- **[Binance with Rust](/rust)** → Terminal-based version ([Rust README](/rust/README.md))  
-- **[Kraken with Python](/kraken)** → Kraken testnet ([Kraken README](KRAKEN.md))
+- **[Binance with Python](/python)** → Web-based version ([Binance Python README](/python/README.md))  
+- **[Binance with Rust](/rust)** → Terminal-based version ([Binance Rust README](/rust/README.md))  
+- **[Kraken with Python](/kraken)** → Kraken testnet ([Kraken Python README](KRAKEN.md))
 
 The Binance implementations display:  
 - OHLC market data, 24h volumes and spread  
@@ -77,5 +77,5 @@ Aside from the Binance implementations, this repository also explores the **Krak
 - Place orders programmatically using Kraken's demo environment.
 - Experiment with trading strategies using a simulated balance.
 
-Refer to the [Kraken README](KRAKEN.md) for more details on interacting with Kraken's testnet.
+Refer to the [Kraken Python README](KRAKEN.md) for more details on interacting with Kraken's testnet.
 
